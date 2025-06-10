@@ -1,14 +1,12 @@
-const db = require('../../lib/database');
-const PiNetworkAPI = require('../../lib/pi-network');
+// 模拟数据库
+let users = new Map();
 
-const piAPI = new PiNetworkAPI();
-
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -19,11 +17,11 @@ module.exports = async (req, res) => {
 
   try {
     const { userId, amount, purpose } = req.body;
-    
+
     if (!userId || !amount) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User ID and amount are required' 
+      return res.status(400).json({
+        success: false,
+        message: 'User ID and amount are required'
       });
     }
 
@@ -38,15 +36,20 @@ module.exports = async (req, res) => {
       createdAt: new Date().toISOString()
     };
 
-    // 模拟支付成功（实际环境中需要Pi Network支付流程）
-    setTimeout(async () => {
-      try {
-        // 模拟支付完成，增加用户余额
-        await db.updateBalance(userId, parseFloat(amount));
-        console.log(`模拟支付完成: 用户 ${userId} 充值 ${amount} π`);
-      } catch (error) {
-        console.error('模拟支付处理失败:', error);
+    // 模拟支付成功，增加用户余额
+    setTimeout(() => {
+      let user = users.get(userId);
+      if (!user) {
+        user = {
+          piUserId: userId,
+          username: `用户${userId}`,
+          balance: 0,
+          stats: { totalGames: 0, wins: 0, losses: 0, winRate: 0, score: 100 }
+        };
+        users.set(userId, user);
       }
+      user.balance += parseFloat(amount);
+      console.log(`模拟支付完成: 用户 ${userId} 充值 ${amount} π`);
     }, 2000);
 
     res.json({
@@ -62,4 +65,4 @@ module.exports = async (req, res) => {
       message: 'Internal server error'
     });
   }
-};
+}

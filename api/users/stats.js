@@ -1,11 +1,12 @@
-const db = require('../../../lib/database');
+// 模拟数据库
+let users = new Map();
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -16,21 +17,22 @@ module.exports = async (req, res) => {
 
   try {
     const { uid } = req.query;
-    
+
     if (!uid) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
       });
     }
 
-    const user = await db.getUser(uid);
-    
+    let user = users.get(uid);
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found'
-      });
+      user = {
+        piUserId: uid,
+        username: `用户${uid}`,
+        stats: { totalGames: 0, wins: 0, losses: 0, winRate: 0, score: 100, rank: 0 }
+      };
+      users.set(uid, user);
     }
 
     res.json({
@@ -45,4 +47,4 @@ module.exports = async (req, res) => {
       message: 'Internal server error'
     });
   }
-};
+}

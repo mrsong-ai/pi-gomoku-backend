@@ -1,11 +1,12 @@
-const db = require('../../lib/database');
+// 模拟数据库
+let users = new Map();
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
   // 设置CORS头
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  
+
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
@@ -16,22 +17,32 @@ module.exports = async (req, res) => {
 
   try {
     const { userId } = req.query;
-    
+
     if (!userId) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'User ID is required' 
+      return res.status(400).json({
+        success: false,
+        message: 'User ID is required'
       });
     }
 
-    const balance = await db.getBalance(userId);
+    // 获取或创建用户
+    let user = users.get(userId);
+    if (!user) {
+      user = {
+        piUserId: userId,
+        username: `用户${userId}`,
+        balance: 10.0, // 默认余额
+        stats: { totalGames: 0, wins: 0, losses: 0, winRate: 0, score: 100 }
+      };
+      users.set(userId, user);
+    }
 
     res.json({
       success: true,
       balance: {
-        current: balance,
-        totalRecharged: 0, // 可以从历史记录计算
-        totalSpent: 0      // 可以从历史记录计算
+        current: user.balance,
+        totalRecharged: 0,
+        totalSpent: 0
       }
     });
 
@@ -42,4 +53,4 @@ module.exports = async (req, res) => {
       message: 'Internal server error'
     });
   }
-};
+}
