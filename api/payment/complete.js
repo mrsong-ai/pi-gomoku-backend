@@ -1,7 +1,4 @@
-const db = require('../../lib/database');
-
-module.exports = async (req, res) => {
-  // 设置CORS头
+export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -24,7 +21,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // 模拟Pi Network支付完成处理
     console.log('Processing payment completion:', paymentId, txid);
 
     res.json({
@@ -42,4 +38,4 @@ module.exports = async (req, res) => {
       message: 'Internal server error'
     });
   }
-};
+}
