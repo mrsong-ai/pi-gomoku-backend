@@ -1,13 +1,7 @@
 import express from "express";
+import db from "../lib/database.js";
 
 const router = express.Router();
-
-// 模拟数据库
-const mockLeaderboard = [
-  { userId: "user1", username: "玩家1", wins: 15, losses: 3, winRate: 83.3 },
-  { userId: "user2", username: "玩家2", wins: 12, losses: 5, winRate: 70.6 },
-  { userId: "user3", username: "玩家3", wins: 10, losses: 4, winRate: 71.4 },
-];
 
 router.get("/", async (req, res) => {
   // 设置CORS头
@@ -27,14 +21,16 @@ router.get("/", async (req, res) => {
 
   try {
     const { limit = 100 } = req.query;
+    console.log(`[排行榜API] 获取排行榜，限制: ${limit}`);
 
-    // 返回模拟排行榜数据
-    const limitedLeaderboard = mockLeaderboard.slice(0, parseInt(limit));
+    // 使用真实数据库获取排行榜
+    const leaderboard = await db.getLeaderboard(parseInt(limit));
+    console.log(`[排行榜API] 返回 ${leaderboard.length} 条记录`);
 
     res.json({
       success: true,
-      leaderboard: limitedLeaderboard,
-      total: limitedLeaderboard.length,
+      leaderboard: leaderboard,
+      total: leaderboard.length,
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
@@ -50,6 +46,7 @@ router.get("/", async (req, res) => {
 router.get("/rank", async (req, res) => {
   try {
     const { userId } = req.query;
+    console.log(`[排行榜API] 获取用户排名，用户ID: ${userId}`);
 
     if (!userId) {
       return res.status(400).json({
@@ -58,11 +55,9 @@ router.get("/rank", async (req, res) => {
       });
     }
 
-    // 模拟用户排名
-    const userIndex = mockLeaderboard.findIndex(
-      (user) => user.userId === userId
-    );
-    const rank = userIndex >= 0 ? userIndex + 1 : null;
+    // 使用真实数据库获取用户排名
+    const rank = await db.getUserRank(userId);
+    console.log(`[排行榜API] 用户 ${userId} 排名: ${rank}`);
 
     res.json({
       success: true,
