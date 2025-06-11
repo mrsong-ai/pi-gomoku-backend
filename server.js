@@ -1,6 +1,6 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
+import express from "express";
+import cors from "cors";
+import path from "path";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -10,50 +10,50 @@ app.use(cors());
 app.use(express.json());
 
 // 导入API路由
-const authLogin = require('./api/auth/login');
-const gamesRecord = require('./api/games/record');
-const leaderboard = require('./api/leaderboard');
-const usersStats = require('./api/users/stats');
+import authLogin from "./api/auth/login.js";
+import gamesRecord from "./api/games/record.js";
+import leaderboard from "./api/leaderboard.js";
+import usersStats from "./api/users/stats.js";
 
 // 支付相关API
-const paymentApprove = require('./api/payment/approve');
-const paymentBalance = require('./api/payment/balance');
-const paymentComplete = require('./api/payment/complete');
-const paymentConsume = require('./api/payment/consume');
-const paymentCreate = require('./api/payment/create');
-const paymentVerify = require('./api/payment/verify');
+import paymentApprove from "./api/payment/approve.js";
+import paymentBalance from "./api/payment/balance.js";
+import paymentComplete from "./api/payment/complete.js";
+import paymentConsume from "./api/payment/consume.js";
+import paymentCreate from "./api/payment/create.js";
+import paymentVerify from "./api/payment/verify.js";
 
 // API路由
-app.use('/api/auth/login', authLogin);
-app.use('/api/games/record', gamesRecord);
-app.use('/api/leaderboard', leaderboard);
-app.use('/api/users/stats', usersStats);
+app.use("/api/auth/login", authLogin);
+app.use("/api/games/record", gamesRecord);
+app.use("/api/leaderboard", leaderboard);
+app.use("/api/users/stats", usersStats);
 
 // 支付API路由
-app.use('/api/payment/approve', paymentApprove);
-app.use('/api/payment/balance', paymentBalance);
-app.use('/api/payment/complete', paymentComplete);
-app.use('/api/payment/consume', paymentConsume);
-app.use('/api/payment/create', paymentCreate);
-app.use('/api/payment/verify', paymentVerify);
+app.use("/api/payment/approve", paymentApprove);
+app.use("/api/payment/balance", paymentBalance);
+app.use("/api/payment/complete", paymentComplete);
+app.use("/api/payment/consume", paymentConsume);
+app.use("/api/payment/create", paymentCreate);
+app.use("/api/payment/verify", paymentVerify);
 
 // 健康检查端点
-app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+app.get("/health", (req, res) => {
+  res.json({ status: "OK", timestamp: new Date().toISOString() });
 });
 
 // 根路径
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Pi五子棋游戏后端API服务',
-    version: '1.0.0',
+app.get("/", (req, res) => {
+  res.json({
+    message: "Pi五子棋游戏后端API服务",
+    version: "1.0.0",
     endpoints: [
-      '/api/auth/login',
-      '/api/games/record',
-      '/api/leaderboard',
-      '/api/users/stats',
-      '/api/payment/*'
-    ]
+      "/api/auth/login",
+      "/api/games/record",
+      "/api/leaderboard",
+      "/api/users/stats",
+      "/api/payment/*",
+    ],
   });
 });
 
@@ -64,4 +64,4 @@ app.listen(PORT, () => {
   console.log(`🏥 健康检查: http://localhost:${PORT}/health`);
 });
 
-module.exports = app;
+export default app;

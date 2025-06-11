@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Pi五子棋游戏后端API服务",
   "main": "server.js",
+  "type": "module",
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js"

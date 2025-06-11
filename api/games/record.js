@@ -1,80 +1,79 @@
-// 模拟数据库
-let users = new Map();
-let games = [];
+// 导入共享数据库
+import db from "../../lib/database.js";
 
 export default async function handler(req, res) {
   // 设置CORS头
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ success: false, message: 'Method not allowed' });
+  if (req.method !== "POST") {
+    return res
+      .status(405)
+      .json({ success: false, message: "Method not allowed" });
   }
 
   try {
     const { userId, username, gameResult, gameData } = req.body;
+    console.log(`[游戏记录API] 收到请求:`, {
+      userId,
+      username,
+      gameResult,
+      gameData,
+    });
 
     if (!userId || !gameResult) {
+      console.log("[游戏记录API] 错误: 缺少必要参数");
       return res.status(400).json({
         success: false,
-        message: 'User ID and game result are required'
+        message: "User ID and game result are required",
       });
     }
 
     // 记录游戏
-    const gameId = 'game_' + Date.now();
+    const gameId = "game_" + Date.now();
     const game = {
       id: gameId,
       userId,
       username,
       result: gameResult,
       timestamp: new Date().toISOString(),
-      ...gameData
+      ...gameData,
     };
 
-    games.push(game);
+    // 使用共享数据库记录游戏
+    const recordedGameId = await db.recordGame({
+      userId,
+      username,
+      result: gameResult,
+      ...gameData,
+    });
 
-    // 更新用户统计
-    let user = users.get(userId);
+    // 获取更新后的用户数据
+    const user = await db.getUser(userId);
     if (!user) {
-      user = {
-        piUserId: userId,
-        username: username || `用户${userId}`,
-        stats: { totalGames: 0, wins: 0, losses: 0, winRate: 0, score: 100 }
-      };
-      users.set(userId, user);
+      console.error("Failed to get user after recording game");
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update user stats",
+      });
     }
-
-    user.stats.totalGames++;
-    if (gameResult === 'win') {
-      user.stats.wins++;
-      user.stats.score += 10;
-    } else if (gameResult === 'loss') {
-      user.stats.losses++;
-      user.stats.score = Math.max(0, user.stats.score - 5);
-    }
-
-    user.stats.winRate = user.stats.totalGames > 0 
-      ? Math.round((user.stats.wins / user.stats.totalGames) * 100) 
-      : 0;
 
     res.json({
       success: true,
-      gameId,
+      gameId: recordedGameId,
       userStats: user.stats,
-      message: 'Game recorded successfully'
+      message: "Game recorded successfully",
     });
-
   } catch (error) {
-    console.error('Record game error:', error);
+    console.error("Record game error:", error);
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 }
