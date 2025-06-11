@@ -73,4 +73,28 @@ router.get("/rank", async (req, res) => {
   }
 });
 
+// 调试端点：查看所有用户数据
+router.get("/debug", async (req, res) => {
+  try {
+    const allUsers = await db.getAllUsers();
+    res.json({
+      success: true,
+      users: allUsers.map((user) => ({
+        id: user.id,
+        username: user.username,
+        stats: user.stats,
+        gameHistory: user.gameHistory,
+      })),
+      total: allUsers.length,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Debug endpoint error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
 export default router;
