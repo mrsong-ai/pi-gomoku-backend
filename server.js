@@ -39,7 +39,32 @@ app.use("/api/payment/verify", paymentVerify);
 
 // 健康检查端点
 app.get("/health", (req, res) => {
-  res.json({ status: "OK", timestamp: new Date().toISOString() });
+  res.json({
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    platform: "Render.com",
+    uptime: process.uptime(),
+  });
+});
+
+// API根路径
+app.get("/api", (req, res) => {
+  res.json({
+    message: "Pi五子棋游戏API",
+    version: "1.0.0",
+    availableEndpoints: [
+      "/api/auth/login",
+      "/api/games/record",
+      "/api/users/stats",
+      "/api/leaderboard",
+      "/api/payment/approve",
+      "/api/payment/balance",
+      "/api/payment/complete",
+      "/api/payment/consume",
+      "/api/payment/create",
+      "/api/payment/verify",
+    ],
+  });
 });
 
 // 根路径
