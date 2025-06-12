@@ -1,0 +1,8 @@
+# 忽略所有数据文件
+*.json
+*.db
+*.sqlite
+*.log
+
+# 但保留这个.gitignore文件
+!.gitignore
