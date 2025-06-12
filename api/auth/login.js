@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { accessToken } = req.body;
+    const { accessToken, userInfo } = req.body;
 
     if (!accessToken) {
       return res.status(400).json({
@@ -27,11 +27,21 @@ export default async function handler(req, res) {
       });
     }
 
-    // 生成用户ID（基于accessToken确保一致性）
-    const piUserId =
-      "pi_user_" + Buffer.from(accessToken).toString("base64").slice(0, 10);
+    // 生成用户ID（基于用户唯一标识符确保一致性）
+    let piUserId;
+    if (userInfo && userInfo.uid) {
+      // 使用Pi Network返回的用户唯一标识符
+      piUserId = "pi_user_" + userInfo.uid;
+    } else {
+      // 兼容旧版本：基于accessToken生成（但这会导致重复用户问题）
+      piUserId =
+        "pi_user_" + Buffer.from(accessToken).toString("base64").slice(0, 10);
+    }
 
-    console.log(`[登录API] Pi用户登录: ${piUserId}`);
+    console.log(
+      `[登录API] Pi用户登录: ${piUserId}`,
+      userInfo ? `用户名: ${userInfo.username}` : ""
+    );
 
     // 使用共享数据库检查用户数据
     let user = await db.getUser(piUserId);
@@ -39,13 +49,29 @@ export default async function handler(req, res) {
     if (!user) {
       // 首次登录，创建新用户（0数据）
       console.log(`[登录API] 创建新Pi用户: ${piUserId}`);
+      const username =
+        userInfo && userInfo.username
+          ? userInfo.username
+          : "Pi用户" + Math.floor(Math.random() * 1000);
       user = await db.createUser(piUserId, {
-        username: "Pi用户" + Math.floor(Math.random() * 1000),
+        username: username,
       });
     } else {
-      // 更新最后登录时间
+      // 更新最后登录时间和用户名（如果有新的用户名）
       user.lastLoginAt = new Date().toISOString();
-      await db.updateUser(piUserId, { lastLoginAt: user.lastLoginAt });
+      const updates = { lastLoginAt: user.lastLoginAt };
+
+      // 如果传入了新的用户名，更新用户名
+      if (
+        userInfo &&
+        userInfo.username &&
+        userInfo.username !== user.username
+      ) {
+        updates.username = userInfo.username;
+        user.username = userInfo.username;
+      }
+
+      await db.updateUser(piUserId, updates);
       console.log(
         `[登录API] 用户重新登录: ${piUserId}, 用户名: ${user.username}`
       );
