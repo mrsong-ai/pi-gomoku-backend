@@ -97,4 +97,23 @@ router.get("/debug", async (req, res) => {
   }
 });
 
+// 清理测试数据端点
+router.post("/cleanup", async (req, res) => {
+  try {
+    const deletedCount = await db.cleanupTestData();
+    res.json({
+      success: true,
+      message: `已清理 ${deletedCount} 个测试用户`,
+      deletedCount,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Cleanup endpoint error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+});
+
 export default router;
