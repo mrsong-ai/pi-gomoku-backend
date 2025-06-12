@@ -1,5 +1,5 @@
-// 模拟数据库
-let users = new Map();
+// 导入共享数据库
+import db from "../../lib/database.js";
 
 export default async function handler(req, res) {
   // 设置CORS头
@@ -31,31 +31,33 @@ export default async function handler(req, res) {
     const piUserId =
       "pi_user_" + Buffer.from(accessToken).toString("base64").slice(0, 10);
 
-    // 检查是否已有用户数据
-    let user = users.get(piUserId);
+    console.log(`[登录API] Pi用户登录: ${piUserId}`);
+
+    // 使用共享数据库检查用户数据
+    let user = await db.getUser(piUserId);
 
     if (!user) {
       // 首次登录，创建新用户（0数据）
-      user = {
-        piUserId: piUserId,
-        username: "测试玩家" + Math.floor(Math.random() * 1000),
-        stats: {
-          totalGames: 0,
-          wins: 0,
-          losses: 0,
-          winRate: 0,
-          score: 100,
-          rank: 0,
-        },
-      };
-
-      // 保存新用户数据
-      users.set(piUserId, user);
+      console.log(`[登录API] 创建新Pi用户: ${piUserId}`);
+      user = await db.createUser(piUserId, {
+        username: "Pi用户" + Math.floor(Math.random() * 1000),
+      });
+    } else {
+      // 更新最后登录时间
+      user.lastLoginAt = new Date().toISOString();
+      await db.updateUser(piUserId, { lastLoginAt: user.lastLoginAt });
+      console.log(
+        `[登录API] 用户重新登录: ${piUserId}, 用户名: ${user.username}`
+      );
     }
 
     res.json({
       success: true,
-      user: user,
+      user: {
+        piUserId: user.id,
+        username: user.username,
+        stats: user.stats,
+      },
       message: "Login successful",
     });
   } catch (error) {

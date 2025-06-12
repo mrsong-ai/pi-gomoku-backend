@@ -21,13 +21,8 @@ export default async function handler(req, res) {
     // 获取所有用户数据
     const allUsers = await db.getAllUsers();
 
-    // 过滤掉明显的测试用户，但保留真实的"测试玩家"
-    const realUsers = allUsers.filter(
-      (user) =>
-        !user.id.startsWith("test_") &&
-        !user.username.startsWith("测试用户") &&
-        !user.username.includes("test")
-    );
+    // 只显示真实Pi用户（以pi_user_开头的ID）
+    const realUsers = allUsers.filter((user) => user.id.startsWith("pi_user_"));
 
     // 统计数据
     const stats = {
