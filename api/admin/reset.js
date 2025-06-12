@@ -336,4 +336,70 @@ router.post("/complete-reset", async (req, res) => {
   }
 });
 
+// 获取系统性能统计
+router.post("/system-stats", async (req, res) => {
+  try {
+    console.log("[管理API] 收到系统性能统计请求");
+
+    // 简单的安全检查
+    const { adminKey } = req.body;
+    if (adminKey !== "pi_gomoku_admin_2024") {
+      return res.status(403).json({
+        success: false,
+        error: "无效的管理员密钥",
+      });
+    }
+
+    // 获取系统统计
+    const systemStats = db.getSystemStats();
+    const userStats = await db.getAllUsers();
+
+    // 计算额外统计
+    const now = new Date();
+    const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+    const recentActiveUsers = userStats.filter(
+      (user) => new Date(user.lastLoginAt) > oneHourAgo
+    ).length;
+
+    res.json({
+      success: true,
+      systemStats,
+      performance: {
+        memoryUsagePercent: Math.round(
+          (systemStats.memory.used / systemStats.memory.total) * 100
+        ),
+        isHighMemoryUsage: systemStats.memory.used > 400, // 超过400MB警告
+        recentActiveUsers,
+        totalUsers: userStats.length,
+        averageGamesPerUser:
+          userStats.length > 0
+            ? Math.round(
+                userStats.reduce(
+                  (sum, user) => sum + user.stats.totalGames,
+                  0
+                ) / userStats.length
+              )
+            : 0,
+      },
+      warnings: [
+        ...(systemStats.memory.used > 400
+          ? ["内存使用量较高，建议考虑升级方案"]
+          : []),
+        ...(recentActiveUsers > 20 ? ["活跃用户较多，注意性能监控"] : []),
+        ...(systemStats.uptime.hours < 1
+          ? ["服务最近重启过，数据可能丢失"]
+          : []),
+      ],
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[管理API] 系统性能统计失败:", error);
+    res.status(500).json({
+      success: false,
+      error: "系统性能统计失败",
+      details: error.message,
+    });
+  }
+});
+
 export default router;
