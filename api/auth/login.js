@@ -32,16 +32,33 @@ export default async function handler(req, res) {
     if (userInfo && userInfo.uid) {
       // 使用Pi Network返回的用户唯一标识符
       piUserId = "pi_user_" + userInfo.uid;
+      console.log(
+        `[登录API] 使用Pi UID生成用户ID: ${piUserId}, 用户名: ${userInfo.username}`
+      );
     } else {
       // 兼容旧版本：基于accessToken生成（但这会导致重复用户问题）
       piUserId =
         "pi_user_" + Buffer.from(accessToken).toString("base64").slice(0, 10);
+      console.log(
+        `[登录API] ⚠️ 使用accessToken生成用户ID: ${piUserId} (可能导致重复用户)`
+      );
     }
 
-    console.log(
-      `[登录API] Pi用户登录: ${piUserId}`,
-      userInfo ? `用户名: ${userInfo.username}` : ""
-    );
+    // 额外的安全检查：如果使用用户名查找到现有用户但ID不同，记录警告
+    if (userInfo && userInfo.username) {
+      const allUsers = await db.getAllUsers();
+      const existingUserWithSameName = allUsers.find(
+        (u) => u.username === userInfo.username && u.id !== piUserId
+      );
+
+      if (existingUserWithSameName) {
+        console.log(`[登录API] ⚠️ 警告：发现同名用户但ID不同`);
+        console.log(
+          `[登录API] 现有用户: ${existingUserWithSameName.id}, 新用户: ${piUserId}`
+        );
+        console.log(`[登录API] 用户名: ${userInfo.username}`);
+      }
+    }
 
     // 使用共享数据库检查用户数据
     let user = await db.getUser(piUserId);

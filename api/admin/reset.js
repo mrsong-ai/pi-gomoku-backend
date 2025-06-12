@@ -186,4 +186,154 @@ router.post("/cleanup-access-token-duplicates", async (req, res) => {
   }
 });
 
+// 手动修正用户数据的端点
+router.post("/fix-user-data", async (req, res) => {
+  try {
+    console.log("[管理API] 收到修正用户数据请求");
+
+    // 简单的安全检查
+    const { adminKey, username, correctStats } = req.body;
+    if (adminKey !== "pi_gomoku_admin_2024") {
+      return res.status(403).json({
+        success: false,
+        error: "无效的管理员密钥",
+      });
+    }
+
+    if (!username || !correctStats) {
+      return res.status(400).json({
+        success: false,
+        error: "缺少用户名或正确的统计数据",
+      });
+    }
+
+    // 查找用户
+    const allUsers = await db.getAllUsers();
+    const targetUser = allUsers.find((user) => user.username === username);
+
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        error: `未找到用户: ${username}`,
+      });
+    }
+
+    console.log(
+      `[管理API] 找到用户: ${targetUser.id}, 当前数据:`,
+      targetUser.stats
+    );
+    console.log(`[管理API] 要修正为:`, correctStats);
+
+    // 备份原始数据
+    const originalStats = { ...targetUser.stats };
+
+    // 更新用户统计数据
+    const updatedStats = {
+      totalGames: correctStats.totalGames || targetUser.stats.totalGames,
+      wins: correctStats.wins || targetUser.stats.wins,
+      losses: correctStats.losses || targetUser.stats.losses,
+      draws: correctStats.draws || targetUser.stats.draws,
+      winRate:
+        correctStats.winRate !== undefined
+          ? correctStats.winRate
+          : targetUser.stats.winRate,
+      rank: correctStats.rank || targetUser.stats.rank,
+    };
+
+    // 计算胜率（如果没有提供）
+    if (updatedStats.totalGames > 0 && correctStats.winRate === undefined) {
+      updatedStats.winRate = Math.round(
+        (updatedStats.wins / updatedStats.totalGames) * 100
+      );
+    }
+
+    // 更新用户数据
+    await db.updateUser(targetUser.id, {
+      stats: updatedStats,
+      lastUpdatedAt: new Date().toISOString(),
+      dataFixedAt: new Date().toISOString(),
+    });
+
+    console.log(`[管理API] 用户数据修正完成: ${username}`);
+
+    res.json({
+      success: true,
+      message: `用户 ${username} 的数据已修正`,
+      userId: targetUser.id,
+      originalStats,
+      updatedStats,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[管理API] 用户数据修正失败:", error);
+    res.status(500).json({
+      success: false,
+      error: "用户数据修正失败",
+      details: error.message,
+    });
+  }
+});
+
+// 完全重置所有用户数据的端点
+router.post("/complete-reset", async (req, res) => {
+  try {
+    console.log("[管理API] 收到完全重置请求");
+
+    // 简单的安全检查
+    const { adminKey, confirmReset } = req.body;
+    if (adminKey !== "pi_gomoku_admin_2024") {
+      return res.status(403).json({
+        success: false,
+        error: "无效的管理员密钥",
+      });
+    }
+
+    if (confirmReset !== "CONFIRM_COMPLETE_RESET") {
+      return res.status(400).json({
+        success: false,
+        error: "需要确认重置标识",
+      });
+    }
+
+    // 获取重置前的统计
+    const allUsersBefore = await db.getAllUsers();
+    const piUsersBefore = allUsersBefore.filter((user) =>
+      user.id.startsWith("pi_user_")
+    );
+
+    console.log(
+      `[管理API] 重置前统计: 总用户${allUsersBefore.length}个, Pi用户${piUsersBefore.length}个`
+    );
+
+    // 完全清空所有用户数据
+    await db.clearAllUsers();
+
+    console.log("[管理API] 所有用户数据已清空");
+
+    // 获取重置后的统计
+    const allUsersAfter = await db.getAllUsers();
+
+    res.json({
+      success: true,
+      message: "所有用户数据已完全重置",
+      beforeReset: {
+        totalUsers: allUsersBefore.length,
+        piUsers: piUsersBefore.length,
+      },
+      afterReset: {
+        totalUsers: allUsersAfter.length,
+        piUsers: 0,
+      },
+      resetTime: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("[管理API] 完全重置失败:", error);
+    res.status(500).json({
+      success: false,
+      error: "完全重置失败",
+      details: error.message,
+    });
+  }
+});
+
 export default router;
