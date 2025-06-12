@@ -18,11 +18,21 @@ export default async function handler(req, res) {
   }
 
   try {
+    // 获取查询参数
+    const {
+      limit = 50, // 默认显示50个用户
+      page = 1, // 页码，从1开始
+      showAll = false, // 是否显示所有用户
+    } = req.query;
+
     // 获取所有用户数据
     const allUsers = await db.getAllUsers();
 
     // 只显示真实Pi用户（以pi_user_开头的ID）
     const realUsers = allUsers.filter((user) => user.id.startsWith("pi_user_"));
+
+    // 按最后登录时间排序
+    realUsers.sort((a, b) => new Date(b.lastLoginAt) - new Date(a.lastLoginAt));
 
     // 统计数据
     const stats = {
@@ -66,19 +76,45 @@ export default async function handler(req, res) {
           .length,
       },
 
-      // 最近登录的用户列表（最近10个）
-      recentUsers: realUsers
-        .sort((a, b) => new Date(b.lastLoginAt) - new Date(a.lastLoginAt))
-        .slice(0, 10)
-        .map((user) => ({
-          id: user.id.slice(-8), // 只显示ID后8位保护隐私
-          username: user.username,
-          totalGames: user.stats.totalGames,
-          wins: user.stats.wins,
-          winRate: user.stats.winRate,
-          lastLoginAt: user.lastLoginAt,
-          createdAt: user.createdAt,
-        })),
+      // 分页用户列表
+      pagination: (() => {
+        const totalUsers = realUsers.length;
+        const limitNum = showAll === "true" ? totalUsers : parseInt(limit);
+        const pageNum = parseInt(page);
+        const startIndex = (pageNum - 1) * limitNum;
+        const endIndex = startIndex + limitNum;
+
+        const paginatedUsers = realUsers.slice(startIndex, endIndex);
+
+        return {
+          currentPage: pageNum,
+          totalPages: Math.ceil(totalUsers / limitNum),
+          totalUsers: totalUsers,
+          usersPerPage: limitNum,
+          hasNextPage: endIndex < totalUsers,
+          hasPrevPage: pageNum > 1,
+          users: paginatedUsers.map((user) => ({
+            id: user.id.slice(-8), // 只显示ID后8位保护隐私
+            username: user.username,
+            totalGames: user.stats.totalGames,
+            wins: user.stats.wins,
+            winRate: user.stats.winRate,
+            lastLoginAt: user.lastLoginAt,
+            createdAt: user.createdAt,
+          })),
+        };
+      })(),
+
+      // 最近登录的用户列表（最近10个）- 保持原有功能
+      recentUsers: realUsers.slice(0, 10).map((user) => ({
+        id: user.id.slice(-8), // 只显示ID后8位保护隐私
+        username: user.username,
+        totalGames: user.stats.totalGames,
+        wins: user.stats.wins,
+        winRate: user.stats.winRate,
+        lastLoginAt: user.lastLoginAt,
+        createdAt: user.createdAt,
+      })),
 
       // 活跃用户排行（按游戏局数）
       topActiveUsers: realUsers
