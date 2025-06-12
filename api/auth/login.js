@@ -73,6 +73,18 @@ export default async function handler(req, res) {
       user = await db.createUser(piUserId, {
         username: username,
       });
+
+      // 触发数据变更通知（新用户创建）
+      console.log(`[登录API] 触发新用户创建数据刷新通知`);
+      setTimeout(() => {
+        // 延迟触发，确保数据库操作完成
+        db.notifyDataChange &&
+          db.notifyDataChange("USER_LOGIN", {
+            userId: piUserId,
+            username: username,
+            isNewUser: true,
+          });
+      }, 100);
     } else {
       // 更新最后登录时间和用户名（如果有新的用户名）
       user.lastLoginAt = new Date().toISOString();
@@ -92,6 +104,18 @@ export default async function handler(req, res) {
       console.log(
         `[登录API] 用户重新登录: ${piUserId}, 用户名: ${user.username}`
       );
+
+      // 触发数据变更通知（用户重新登录）
+      console.log(`[登录API] 触发用户重新登录数据刷新通知`);
+      setTimeout(() => {
+        // 延迟触发，确保数据库操作完成
+        db.notifyDataChange &&
+          db.notifyDataChange("USER_LOGIN", {
+            userId: piUserId,
+            username: user.username,
+            isNewUser: false,
+          });
+      }, 100);
     }
 
     res.json({
