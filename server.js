@@ -37,6 +37,10 @@ app.use("/api/payment/consume", paymentConsume);
 app.use("/api/payment/create", paymentCreate);
 app.use("/api/payment/verify", paymentVerify);
 
+// 管理API路由
+import adminReset from "./api/admin/reset.js";
+app.use("/api/admin/reset", adminReset);
+
 // 健康检查端点
 app.get("/health", (req, res) => {
   res.json({
