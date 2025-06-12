@@ -28,8 +28,8 @@ export default async function handler(req, res) {
     // 获取所有用户数据
     const allUsers = await db.getAllUsers();
 
-    // 只显示真实Pi用户，过滤掉测试用户
-    const realUsers = allUsers.filter((user) => {
+    // 所有真实Pi用户（包括未游戏的用户）
+    const allRealUsers = allUsers.filter((user) => {
       return (
         user.id.startsWith("pi_user_") &&
         !user.username.includes("测试") &&
@@ -40,22 +40,28 @@ export default async function handler(req, res) {
       );
     });
 
+    // 有游戏记录的真实Pi用户（用于活跃用户统计）
+    const realUsers = allRealUsers.filter((user) => user.stats.totalGames > 0);
+
     // 按最后登录时间排序
+    allRealUsers.sort(
+      (a, b) => new Date(b.lastLoginAt) - new Date(a.lastLoginAt)
+    );
     realUsers.sort((a, b) => new Date(b.lastLoginAt) - new Date(a.lastLoginAt));
 
     // 统计数据
     const stats = {
       // 基础统计
-      totalUsers: realUsers.length,
-      activeUsers: realUsers.filter((user) => user.stats.totalGames > 0).length,
-      newUsersToday: realUsers.filter((user) => {
+      totalUsers: allRealUsers.length, // 所有Pi用户（包括未游戏的）
+      activeUsers: realUsers.length, // 有游戏记录的用户
+      newUsersToday: allRealUsers.filter((user) => {
         const today = new Date().toDateString();
         const userDate = new Date(user.createdAt).toDateString();
         return today === userDate;
       }).length,
 
       // 最近活跃用户（最近24小时有登录记录）
-      recentActiveUsers: realUsers.filter((user) => {
+      recentActiveUsers: allRealUsers.filter((user) => {
         const now = new Date();
         const lastLogin = new Date(user.lastLoginAt);
         const hoursDiff = (now - lastLogin) / (1000 * 60 * 60);
@@ -85,15 +91,15 @@ export default async function handler(req, res) {
           .length,
       },
 
-      // 分页用户列表
+      // 分页用户列表（显示所有Pi用户，包括未游戏的）
       pagination: (() => {
-        const totalUsers = realUsers.length;
+        const totalUsers = allRealUsers.length;
         const limitNum = showAll === "true" ? totalUsers : parseInt(limit);
         const pageNum = parseInt(page);
         const startIndex = (pageNum - 1) * limitNum;
         const endIndex = startIndex + limitNum;
 
-        const paginatedUsers = realUsers.slice(startIndex, endIndex);
+        const paginatedUsers = allRealUsers.slice(startIndex, endIndex);
 
         return {
           currentPage: pageNum,
@@ -114,8 +120,8 @@ export default async function handler(req, res) {
         };
       })(),
 
-      // 最近登录的用户列表（最近10个）- 保持原有功能
-      recentUsers: realUsers.slice(0, 10).map((user) => ({
+      // 最近登录的用户列表（最近10个）- 显示所有Pi用户
+      recentUsers: allRealUsers.slice(0, 10).map((user) => ({
         id: user.id.slice(-8), // 只显示ID后8位保护隐私
         username: user.username,
         totalGames: user.stats.totalGames,
