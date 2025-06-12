@@ -28,8 +28,17 @@ export default async function handler(req, res) {
     // 获取所有用户数据
     const allUsers = await db.getAllUsers();
 
-    // 只显示真实Pi用户（以pi_user_开头的ID）
-    const realUsers = allUsers.filter((user) => user.id.startsWith("pi_user_"));
+    // 只显示真实Pi用户，过滤掉测试用户
+    const realUsers = allUsers.filter((user) => {
+      return (
+        user.id.startsWith("pi_user_") &&
+        !user.username.includes("测试") &&
+        !user.username.includes("test") &&
+        !user.username.toLowerCase().includes("mock") &&
+        !user.username.includes("玩家") &&
+        user.username !== "测试玩家432"
+      );
+    });
 
     // 按最后登录时间排序
     realUsers.sort((a, b) => new Date(b.lastLoginAt) - new Date(a.lastLoginAt));
