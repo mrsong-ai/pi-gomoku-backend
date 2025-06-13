@@ -26,7 +26,7 @@ app.use("/api/leaderboard", leaderboard);
 // 认证API（简化版本）
 app.post("/api/auth/login", (req, res) => {
   const { accessToken } = req.body;
-  
+
   // 简化的认证逻辑
   if (accessToken) {
     res.json({
@@ -42,25 +42,25 @@ app.post("/api/auth/login", (req, res) => {
           draws: 0,
           winRate: 0,
           monthlyScore: 100,
-          rank: 0
-        }
-      }
+          rank: 0,
+        },
+      },
     });
   } else {
     res.status(401).json({
       success: false,
-      message: "Invalid access token"
+      message: "Invalid access token",
     });
   }
 });
 
 // 健康检查端点
 app.get("/health", (req, res) => {
-  res.json({ 
-    status: "healthy", 
+  res.json({
+    status: "healthy",
     timestamp: new Date().toISOString(),
-    platform: "Render.com",
-    uptime: process.uptime()
+    platform: "Alibaba Cloud",
+    uptime: process.uptime(),
   });
 });
 
@@ -71,9 +71,9 @@ app.get("/", (req, res) => {
     version: "1.0.0",
     endpoints: [
       "/api/games/record",
-      "/api/users/stats", 
+      "/api/users/stats",
       "/api/leaderboard",
-      "/api/auth/login"
+      "/api/auth/login",
     ],
   });
 });
@@ -86,9 +86,9 @@ app.get("/api", (req, res) => {
     availableEndpoints: [
       "/api/games/record",
       "/api/users/stats",
-      "/api/leaderboard", 
-      "/api/auth/login"
-    ]
+      "/api/leaderboard",
+      "/api/auth/login",
+    ],
   });
 });
 
@@ -103,8 +103,8 @@ app.use((req, res) => {
       "/api/games/record",
       "/api/users/stats",
       "/api/leaderboard",
-      "/api/auth/login"
-    ]
+      "/api/auth/login",
+    ],
   });
 });
 

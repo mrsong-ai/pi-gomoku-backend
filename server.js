@@ -48,7 +48,7 @@ app.get("/health", (req, res) => {
   res.json({
     status: "healthy",
     timestamp: new Date().toISOString(),
-    platform: "Render.com",
+    platform: "Alibaba Cloud",
     uptime: process.uptime(),
   });
 });
